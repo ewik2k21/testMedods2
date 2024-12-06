@@ -6,3 +6,5 @@ const (
 	DatabaseUrl = "DATABASE_URL"
 	JwtKey      = "PoizonStoreKey"
 )
+
+const Salt = "aj7sb5nfj3k56lvz"
