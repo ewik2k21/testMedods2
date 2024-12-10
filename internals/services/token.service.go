@@ -15,7 +15,7 @@ import (
 type TokenService interface {
 	GenerateJwtToken(userIp string) (*string, error)
 	GetClaimsFromToken(tokenCookie string) (*interfacesx.Claims, error)
-	NewRefreshToken(email string) (*string, error)
+	NewRefreshToken(email string, userIp *string) (*string, error)
 }
 
 type tokenService struct {
@@ -69,7 +69,7 @@ func (ts *tokenService) GetClaimsFromToken(tokenCookie string) (*interfacesx.Cla
 
 }
 
-func (ts *tokenService) NewRefreshToken(email string) (*string, error) {
+func (ts *tokenService) NewRefreshToken(email string, userIP *string) (*string, error) {
 	b := make([]byte, 32)
 
 	n := rand.NewSource(uint64(time.Now().Unix()))
@@ -81,7 +81,7 @@ func (ts *tokenService) NewRefreshToken(email string) (*string, error) {
 	}
 	refreshToken := fmt.Sprintf("%x", b)
 
-	if err := ts.userRepo.UpdateRefreshTokenDb(&email, &refreshToken); err != nil {
+	if err := ts.userRepo.UpdateRefreshTokenDb(&email, userIP, &refreshToken); err != nil {
 		return nil, err
 
 	}

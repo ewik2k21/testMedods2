@@ -6,11 +6,14 @@ import (
 	"testMedods2/config"
 	"testMedods2/internals/repository"
 	"testMedods2/x/interfacesx"
+
+	"github.com/gin-gonic/gin"
 )
 
 type UserService interface {
 	CreateUserAccount(userRequest *interfacesx.UserRegistrationRequest) (*interfacesx.UserData, error)
-	CheckPassword(email, password string) (bool, *interfacesx.UserDataForClaims, error)
+	CheckPassword(email, password string) (bool, error)
+	ReadUserIp(c *gin.Context) *string
 }
 
 type userService struct {
@@ -51,14 +54,23 @@ func doPasswordMatch(hashedPassword, currentPassword string) bool {
 
 }
 
-func (us *userService) CheckPassword(email, password string) (bool, *interfacesx.UserDataForClaims, error) {
+func (us *userService) CheckPassword(email, password string) (bool, error) {
 	userData, err := us.userRepo.GetUserByEmail(&email)
 	if err != nil {
-		return false, nil, err
+		return false, err
 	}
 
-	return doPasswordMatch(userData.PasswordHash, password), &interfacesx.UserDataForClaims{
-		UserIP: userData.UserIP,
-	}, nil
+	return doPasswordMatch(userData.PasswordHash, password), nil
 
+}
+func (us *userService) ReadUserIp(c *gin.Context) *string {
+	IPAddress := c.Request.Header.Get("X-Real-Ip")
+	if IPAddress == "" {
+		IPAddress = c.Request.Header.Get("X-Forwarded-For")
+	}
+	if IPAddress == "" {
+		IPAddress = c.RemoteIP()
+	}
+	fmt.Println(IPAddress)
+	return &IPAddress
 }

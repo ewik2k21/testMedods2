@@ -76,7 +76,7 @@ func (h *UserHandler) SignInUser(c *gin.Context) {
 		return
 	}
 
-	passwordOK, userData, err := h.userService.CheckPassword(userCredentials.Email, userCredentials.Password)
+	passwordOK, err := h.userService.CheckPassword(userCredentials.Email, userCredentials.Password)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, interfacesx.ErrorMessage{
 			Message: err.Error(),
@@ -94,8 +94,9 @@ func (h *UserHandler) SignInUser(c *gin.Context) {
 		})
 		return
 	}
+	userIP := h.userService.ReadUserIp(c)
 
-	tokenString, err := h.tokenService.GenerateJwtToken(userData.UserIP)
+	tokenString, err := h.tokenService.GenerateJwtToken(*userIP)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, interfacesx.ErrorMessage{
 			Message: err.Error(),
@@ -105,7 +106,7 @@ func (h *UserHandler) SignInUser(c *gin.Context) {
 		return
 	}
 
-	refreshToken, err := h.tokenService.NewRefreshToken(userCredentials.Email)
+	refreshToken, err := h.tokenService.NewRefreshToken(userCredentials.Email, userIP)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, interfacesx.ErrorMessage{
 			Message: err.Error(),

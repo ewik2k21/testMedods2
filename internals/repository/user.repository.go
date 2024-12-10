@@ -10,7 +10,7 @@ import (
 type UserRepository interface {
 	CreateUserAccount(userRequest *interfacesx.UserRegistrationRequest) (*model.User, error)
 	GetUserByEmail(userEmail *string) (*model.User, error)
-	UpdateRefreshTokenDb(email, refreshToken *string) error
+	UpdateRefreshTokenDb(email, userIP, refreshToken *string) error
 }
 
 type userRepository struct {
@@ -45,8 +45,8 @@ func (r *userRepository) GetUserByEmail(userEmail *string) (*model.User, error) 
 	return user, nil
 }
 
-func (r *userRepository) UpdateRefreshTokenDb(email, refreshToken *string) error {
-	if err := r.db.Model(&model.User{}).Where("email = ?", email).UpdateColumn("refresh_token", refreshToken).Error; err != nil {
+func (r *userRepository) UpdateRefreshTokenDb(email, userIP, refreshToken *string) error {
+	if err := r.db.Model(&model.User{}).Where("email = ?", email).UpdateColumn("refresh_token", refreshToken).UpdateColumn("user_ip", userIP).Error; err != nil {
 		return err
 	}
 	return nil
