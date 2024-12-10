@@ -63,3 +63,61 @@ func (h *UserHandler) SignUpUser(c *gin.Context) {
 	})
 
 }
+
+func (h *UserHandler) SignInUser(c *gin.Context) {
+	var userCredentials interfacesx.UserCredentials
+	if err := c.ShouldBindJSON(&userCredentials); err != nil {
+		c.JSON(http.StatusBadRequest, interfacesx.ErrorMessage{
+			Message: err.Error(),
+			Status:  interfacesx.StatusError,
+			Code:    http.StatusBadRequest,
+		})
+
+		return
+	}
+
+	passwordOK, userData, err := h.userService.CheckPassword(userCredentials.Email, userCredentials.Password)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, interfacesx.ErrorMessage{
+			Message: err.Error(),
+			Status:  interfacesx.StatusError,
+			Code:    http.StatusInternalServerError,
+		})
+		return
+	}
+
+	if !passwordOK {
+		c.JSON(http.StatusBadRequest, interfacesx.ErrorMessage{
+			Message: "Email or password incorrect",
+			Status:  interfacesx.StatusError,
+			Code:    http.StatusBadRequest,
+		})
+		return
+	}
+
+	tokenString, err := h.tokenService.GenerateJwtToken(userData.UserIP)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, interfacesx.ErrorMessage{
+			Message: err.Error(),
+			Status:  interfacesx.StatusError,
+			Code:    http.StatusInternalServerError,
+		})
+		return
+	}
+
+	refreshToken, err := h.tokenService.NewRefreshToken(userCredentials.Email)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, interfacesx.ErrorMessage{
+			Message: err.Error(),
+			Status:  interfacesx.StatusError,
+			Code:    http.StatusInternalServerError,
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, interfacesx.UserSignInResponse{
+		AccessToken:  *tokenString,
+		RefreshToken: *refreshToken,
+	})
+
+}

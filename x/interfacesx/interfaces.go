@@ -48,3 +48,17 @@ type UserData struct {
 	UserName string    `json:"user_name"`
 	Email    string    `json:"email"`
 }
+
+type UserCredentials struct {
+	Email    string `json:"email"`
+	Password string `json:"password"`
+}
+
+type UserDataForClaims struct {
+	UserIP string `json:"user_ip"`
+}
+
+type UserSignInResponse struct {
+	AccessToken  string `json:"access_token"`
+	RefreshToken string `json:"refresh_token"`
+}

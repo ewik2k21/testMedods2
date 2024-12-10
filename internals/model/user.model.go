@@ -11,4 +11,6 @@ type User struct {
 	Email        string    `gorm:"unique;not_null"`
 	UserName     string    `gorm:"not_null"`
 	PasswordHash string    `gorm:"not_null"`
+	RefreshToken string    `gorm:"nullable"`
+	UserIP       string    `gorm:"nullable"`
 }

@@ -10,6 +10,7 @@ import (
 
 type UserService interface {
 	CreateUserAccount(userRequest *interfacesx.UserRegistrationRequest) (*interfacesx.UserData, error)
+	CheckPassword(email, password string) (bool, *interfacesx.UserDataForClaims, error)
 }
 
 type userService struct {
@@ -41,5 +42,23 @@ func generatePasswordHash(password string) string {
 	hash := sha512.New()
 	hash.Write([]byte(password))
 	return fmt.Sprintf("%x", hash.Sum([]byte(config.Salt)))
+
+}
+
+func doPasswordMatch(hashedPassword, currentPassword string) bool {
+	var currentPasswordHash = generatePasswordHash(currentPassword)
+	return hashedPassword == currentPasswordHash
+
+}
+
+func (us *userService) CheckPassword(email, password string) (bool, *interfacesx.UserDataForClaims, error) {
+	userData, err := us.userRepo.GetUserByEmail(&email)
+	if err != nil {
+		return false, nil, err
+	}
+
+	return doPasswordMatch(userData.PasswordHash, password), &interfacesx.UserDataForClaims{
+		UserIP: userData.UserIP,
+	}, nil
 
 }

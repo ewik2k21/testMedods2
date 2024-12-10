@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"testMedods2/internals/model"
 
 	"github.com/joho/godotenv"
 	"github.com/sirupsen/logrus"
@@ -35,6 +36,7 @@ func SetUpDatabase() (*gorm.DB, error) {
 
 func RunAutoMigration(db *gorm.DB) error {
 	if err := db.AutoMigrate(
+		&model.User{},
 	//FILL TABLE
 	); err != nil {
 		errorMessage := fmt.Sprintf("Error migrating database %s", err)

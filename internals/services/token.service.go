@@ -13,8 +13,9 @@ import (
 )
 
 type TokenService interface {
-	GenerateJwtToken(userId, userRole string) (*string, time.Time, error)
+	GenerateJwtToken(userIp string) (*string, error)
 	GetClaimsFromToken(tokenCookie string) (*interfacesx.Claims, error)
+	NewRefreshToken(email string) (*string, error)
 }
 
 type tokenService struct {
@@ -27,7 +28,7 @@ func NewTokenService(userRepo repository.UserRepository) TokenService {
 	}
 }
 
-func (ts *tokenService) GenerateJwtToken(userIp, userRole string) (*string, time.Time, error) {
+func (ts *tokenService) GenerateJwtToken(userIp string) (*string, error) {
 	expirationTime := time.Now().UTC().Add(time.Hour * 2)
 
 	claims := &interfacesx.Claims{
@@ -42,10 +43,10 @@ func (ts *tokenService) GenerateJwtToken(userIp, userRole string) (*string, time
 
 	if err != nil {
 		logrus.Errorf("jwt token not signed: %s", err)
-		return nil, time.Now(), err
+		return nil, err
 	}
 
-	return &tokenString, expirationTime, nil
+	return &tokenString, nil
 
 }
 
@@ -68,7 +69,7 @@ func (ts *tokenService) GetClaimsFromToken(tokenCookie string) (*interfacesx.Cla
 
 }
 
-func (ts *tokenService) NewRefreshToken() (string, error) {
+func (ts *tokenService) NewRefreshToken(email string) (*string, error) {
 	b := make([]byte, 32)
 
 	n := rand.NewSource(uint64(time.Now().Unix()))
@@ -76,8 +77,14 @@ func (ts *tokenService) NewRefreshToken() (string, error) {
 
 	_, err := r.Read(b)
 	if err != nil {
-		return "", err
+		return nil, err
+	}
+	refreshToken := fmt.Sprintf("%x", b)
+
+	if err := ts.userRepo.UpdateRefreshTokenDb(&email, &refreshToken); err != nil {
+		return nil, err
+
 	}
 
-	return fmt.Sprintf("%x", b), nil
+	return &refreshToken, nil
 }
