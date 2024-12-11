@@ -11,6 +11,7 @@ type UserRepository interface {
 	CreateUserAccount(userRequest *interfacesx.UserRegistrationRequest) (*model.User, error)
 	GetUserByEmail(userEmail *string) (*model.User, error)
 	UpdateRefreshTokenDb(email, userIP, refreshToken *string) error
+	CheckRefreshToken(refreshToken string) (*model.User, error)
 }
 
 type userRepository struct {
@@ -50,4 +51,12 @@ func (r *userRepository) UpdateRefreshTokenDb(email, userIP, refreshToken *strin
 		return err
 	}
 	return nil
+}
+
+func (r *userRepository) CheckRefreshToken(refreshToken string) (*model.User, error) {
+	user := &model.User{}
+	if err := r.db.Where("refresh_token = ?", refreshToken).First(user).Error; err != nil {
+		return nil, err
+	}
+	return user, nil
 }

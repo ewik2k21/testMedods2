@@ -3,6 +3,7 @@ package routes
 import (
 	"testMedods2/cmd/server"
 	"testMedods2/internals/handler"
+	"testMedods2/middleware"
 	"testMedods2/x/interfacesx"
 )
 
@@ -11,4 +12,8 @@ func RegistterUserRoutes(server server.GinServer, userHandler *handler.UserHandl
 		{Method: "POST", Path: "/sign_up", Handler: userHandler.SignUpUser},
 		{Method: "POST", Path: "/sign_in", Handler: userHandler.SignInUser},
 	})
+
+	server.RegisterGroupRoute("/api", []interfacesx.RouteDefinition{
+		{Method: "POST", Path: "/refresh_token", Handler: userHandler.RefreshToken},
+	}, middleware.JwtTokenValidation())
 }

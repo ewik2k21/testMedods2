@@ -3,6 +3,7 @@ package services
 import (
 	"fmt"
 	"testMedods2/config"
+	"testMedods2/internals/model"
 	"testMedods2/internals/repository"
 	"testMedods2/x/interfacesx"
 	"time"
@@ -13,9 +14,10 @@ import (
 )
 
 type TokenService interface {
-	GenerateJwtToken(userIp string) (*string, error)
+	GenerateJwtToken(userIp string) (*string, time.Time, error)
 	GetClaimsFromToken(tokenCookie string) (*interfacesx.Claims, error)
 	NewRefreshToken(email string, userIp *string) (*string, error)
+	GetNewDataForTokens(refreshToken interfacesx.RefreshTokenRequest) (*model.User, error)
 }
 
 type tokenService struct {
@@ -28,7 +30,7 @@ func NewTokenService(userRepo repository.UserRepository) TokenService {
 	}
 }
 
-func (ts *tokenService) GenerateJwtToken(userIp string) (*string, error) {
+func (ts *tokenService) GenerateJwtToken(userIp string) (*string, time.Time, error) {
 	expirationTime := time.Now().UTC().Add(time.Hour * 2)
 
 	claims := &interfacesx.Claims{
@@ -43,10 +45,10 @@ func (ts *tokenService) GenerateJwtToken(userIp string) (*string, error) {
 
 	if err != nil {
 		logrus.Errorf("jwt token not signed: %s", err)
-		return nil, err
+		return nil, time.Now(), err
 	}
 
-	return &tokenString, nil
+	return &tokenString, expirationTime, nil
 
 }
 
@@ -87,4 +89,13 @@ func (ts *tokenService) NewRefreshToken(email string, userIP *string) (*string, 
 	}
 
 	return &refreshToken, nil
+}
+
+func (ts *tokenService) GetNewDataForTokens(refreshToken interfacesx.RefreshTokenRequest) (*model.User, error) {
+
+	userData, err := ts.userRepo.CheckRefreshToken(refreshToken.RefreshToken)
+	if err != nil {
+		return nil, err
+	}
+	return userData, nil
 }

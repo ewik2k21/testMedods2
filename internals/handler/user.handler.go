@@ -96,7 +96,7 @@ func (h *UserHandler) SignInUser(c *gin.Context) {
 	}
 	userIP := h.userService.ReadUserIp(c)
 
-	tokenString, err := h.tokenService.GenerateJwtToken(*userIP)
+	tokenString, expirationTime, err := h.tokenService.GenerateJwtToken(*userIP)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, interfacesx.ErrorMessage{
 			Message: err.Error(),
@@ -115,6 +115,72 @@ func (h *UserHandler) SignInUser(c *gin.Context) {
 		})
 		return
 	}
+	http.SetCookie(c.Writer,
+		&http.Cookie{
+			Name:     "token",
+			Value:    *tokenString,
+			Expires:  expirationTime,
+			HttpOnly: true,
+			Path:     "/",
+		})
+
+	c.JSON(http.StatusOK, interfacesx.UserSignInResponse{
+		AccessToken:  *tokenString,
+		RefreshToken: *refreshToken,
+	})
+
+}
+
+func (h *UserHandler) RefreshToken(c *gin.Context) {
+	var refreshTokenRequest interfacesx.RefreshTokenRequest
+	if err := c.ShouldBindJSON(&refreshTokenRequest); err != nil {
+		c.JSON(http.StatusBadRequest, interfacesx.ErrorMessage{
+			Message: err.Error(),
+			Status:  interfacesx.StatusError,
+			Code:    http.StatusBadRequest,
+		})
+
+		return
+	}
+	newDataForToken, err := h.tokenService.GetNewDataForTokens(refreshTokenRequest)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, interfacesx.ErrorMessage{
+			Message: err.Error(),
+			Status:  interfacesx.StatusError,
+			Code:    http.StatusInternalServerError,
+		})
+		return
+	}
+	userIP := h.userService.ReadUserIp(c)
+
+	tokenString, expirationTime, err := h.tokenService.GenerateJwtToken(*userIP)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, interfacesx.ErrorMessage{
+			Message: err.Error(),
+			Status:  interfacesx.StatusError,
+			Code:    http.StatusInternalServerError,
+		})
+		return
+	}
+
+	refreshToken, err := h.tokenService.NewRefreshToken(newDataForToken.Email, userIP)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, interfacesx.ErrorMessage{
+			Message: err.Error(),
+			Status:  interfacesx.StatusError,
+			Code:    http.StatusInternalServerError,
+		})
+		return
+	}
+
+	http.SetCookie(c.Writer,
+		&http.Cookie{
+			Name:     "token",
+			Value:    *tokenString,
+			Expires:  expirationTime,
+			HttpOnly: true,
+			Path:     "/",
+		})
 
 	c.JSON(http.StatusOK, interfacesx.UserSignInResponse{
 		AccessToken:  *tokenString,
